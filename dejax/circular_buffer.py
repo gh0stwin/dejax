@@ -37,10 +37,10 @@ def max_size(buffer: CircularBuffer) -> int:
 
 
 def size(buffer: CircularBuffer) -> IntScalar:
-    return jax.lax.select(
+    return jnp.where(
         buffer.full,
-        on_true=max_size(buffer),
-        on_false=jax.lax.select(
+        max_size(buffer),
+        jax.lax.select(
             buffer.head >= buffer.tail,
             on_true=buffer.head - buffer.tail,
             on_false=max_size(buffer) - (buffer.tail - buffer.head),
@@ -77,7 +77,7 @@ def pop(buffer: CircularBuffer) -> (Item, CircularBuffer):
 
 def get_at_index(buffer: CircularBuffer, index: IntScalar) -> Item:
     chex.assert_shape(index, ())
-    checkify.check(jnp.alltrue(jnp.logical_and(index >= 0, index < size(buffer))), 'Index out of bounds')
+    checkify.check(jnp.all(jnp.logical_and(index >= 0, index < size(buffer))), 'Index out of bounds')
 
     index = (buffer.tail + index) % max_size(buffer)
     return utils.get_pytree_batch_item(buffer.data, index)
